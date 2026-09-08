@@ -36,15 +36,34 @@ jobs:
           # Запускаем pytest
           pytest
   build:
-    # Сборка выполняется только после успешного тестирования
+    # Запускаем build только после успешного test
     needs: test
     runs-on: ubuntu-latest
     steps:
       # Получаем исходный код репозитория
       - name: Checkout repository
         uses: actions/checkout@v4
-      # Собираем Docker-образ
+      # Авторизация в GitHub Container Registry
+      - name: Login in to GHCR
+        uses: docker/login-action@v3
+        with:
+          # Адрес GitHub Container Registry
+          registry: ghcr.io
+          # Имя пользователя GitHub
+          username: ${{ github.actor }}
+          # Автоматический токен GitHub Actions
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # Собираем Docker image
       - name: Build Docker image
         run: |
-          # Собираем Docker image из Dockerfile
-          docker build -t support-desk:latest .
+          # Формируем имя Docker-образа
+          IMAGE_NAME=ghcr.io/${{ github.repository }}:latest
+          # Собираем Docker-образ
+          docker build -t $IMAGE_NAME .
+      # Публикуем Docker image
+      - name: Push Docker image
+        run: |
+          # Формируем имя Docker-образа
+          IMAGE_NAME=ghcr.io/${{ github.repository }}:latest
+          # Загружаем образ в GitHub Container Registry
+          docker push $IMAGE_NAME
