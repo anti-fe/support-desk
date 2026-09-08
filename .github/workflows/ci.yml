@@ -35,3 +35,16 @@ jobs:
         run: |
           # Запускаем pytest
           pytest
+  build:
+    # Сборка выполняется только после успешного тестирования
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      # Получаем исходный код репозитория
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      # Собираем Docker-образ
+      - name: Build Docker image
+        run: |
+          # Собираем Docker image из Dockerfile
+          docker build -t support-desk:latest .
