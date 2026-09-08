@@ -1,0 +1,35 @@
+name: CI
+
+# Определяем события, которые запускают pipeline
+on:
+  # при каждом push
+  push:
+  # при каждом pull
+  pull_request:
+# Задачи pipeline
+jobs:
+  # Автоматическое тестирование
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      # Получаем исходный код репозитория
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      # Устанавливаем Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # Устанавливаем зависимости проекта
+      - name: Install dependencies
+        run: |
+          # Обновляем pip
+          python -m pip install --upgrade pip
+          # Устанавливаем зависимости из requirements.txt
+          pip install -r requirements.txt
+
+      # Автоматические тесты
+      - name: Run tests
+        run: |
+          # Запускаем pytest
+          pytest
