@@ -27,9 +27,11 @@ jobs:
           python -m pip install --upgrade pip
           # Устанавливаем зависимости из requirements.txt
           pip install -r requirements.txt
-
       # Автоматические тесты
       - name: Run tests
+        env:
+          # Добавляем корень репозитория в путь поиска Python-модулей
+          PYTHONPATH: .
         run: |
           # Запускаем pytest
           pytest
