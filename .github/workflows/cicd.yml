@@ -1,64 +1,76 @@
-name: CI
+name: CI/CD
 
-# Определяем события, которые запускают pipeline
 on:
-  # при каждом push
   push:
-  # при каждом pull
   pull_request:
-# Задачи pipeline
+# Разрешения GitHub Actions
+permissions:
+  # Разрешаем читать репозиторий
+  contents: read
+  # Разрешаем публиковать Docker-образы
+  packages: write
 jobs:
-  # Автоматическое тестирование
+  # ==========================================
+  # ЭТАП 1. ТЕСТИРОВАНИЕ
+  # ==========================================
   test:
     runs-on: ubuntu-latest
     steps:
-      # Получаем исходный код репозитория
+      # Получаем исходный код
       - name: Checkout repository
         uses: actions/checkout@v4
       # Устанавливаем Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
+          # Используем Python 3.12
           python-version: "3.12"
-      # Устанавливаем зависимости проекта
+      # Устанавливаем зависимости
       - name: Install dependencies
         run: |
           # Обновляем pip
           python -m pip install --upgrade pip
-          # Устанавливаем зависимости из requirements.txt
+
+          # Устанавливаем зависимости проекта
           pip install -r requirements.txt
-      # Автоматические тесты
+      # Запускаем тесты
       - name: Run tests
         env:
-          # Добавляем корень репозитория в путь поиска Python-модулей
+          # Добавляем корень проекта в PYTHONPATH
           PYTHONPATH: .
         run: |
           # Запускаем pytest
           pytest
+
+  # ==========================================
+  # ЭТАП 2. СБОРКА И ПУБЛИКАЦИЯ
+  # ==========================================
   build:
-    # Сборка запускается только после успешного тестирования
+    # Build запускается после успешного тестирования
     needs: test
+    # Выполняем только для push
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
-      # Получаем исходный код репозитория
+      # Получаем исходный код
       - name: Checkout repository
         uses: actions/checkout@v4
-      # Авторизуемся в GitHub Container Registry
+      # Авторизуемся в GHCR
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
-          # Адрес GitHub Container Registry
+          # GitHub Container Registry
           registry: ghcr.io
-          # Пользователь, запустивший workflow
+          # Пользователь GitHub
           username: ${{ github.actor }}
-          # Автоматический токен GitHub Actions
+          # Токен GitHub Actions
           password: ${{ secrets.GITHUB_TOKEN }}
-      # Собираем Docker-образ с двумя тегами
+      # Собираем Docker-образ
       - name: Build Docker image
         run: |
           # Формируем имя Docker-репозитория
           IMAGE_NAME=ghcr.io/${{ github.repository }}
-          # Формируем тег на основе SHA текущего commit
+          # Формируем тег текущего commit
           IMAGE_TAG=sha-${{ github.sha }}
           # Собираем образ с тегом latest
           docker build \
@@ -68,14 +80,14 @@ jobs:
           docker tag \
             $IMAGE_NAME:latest \
             $IMAGE_NAME:$IMAGE_TAG
-      # Публикуем Docker-образы в GHCR
+      # Публикуем образы
       - name: Push Docker images
         run: |
           # Формируем имя Docker-репозитория
           IMAGE_NAME=ghcr.io/${{ github.repository }}
           # Формируем тег текущего commit
           IMAGE_TAG=sha-${{ github.sha }}
-          # Публикуем последнюю версию
+          # Публикуем latest
           docker push $IMAGE_NAME:latest
-          # Публикуем версию конкретного commit
+          # Публикуем версию commit
           docker push $IMAGE_NAME:$IMAGE_TAG

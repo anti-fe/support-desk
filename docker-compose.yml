@@ -1,0 +1,12 @@
+services:
+  # Основное приложение
+  app:
+    # Готовый Docker-образ из GitHub Container Registry
+    image: ghcr.io/anti-fe/support-desk:latest
+    # Имя контейнера приложения
+    container_name: support-desk
+    # Пробрасываем порт приложения
+    ports:
+      - "8000:8000"
+    # Перезапускаем контейнер при сбое
+    restart: unless-stopped
